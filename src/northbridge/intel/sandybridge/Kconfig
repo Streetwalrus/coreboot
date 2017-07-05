@@ -103,10 +103,10 @@ config MMCONF_BASE_ADDRESS
 config ENABLE_PEG_GEN3
 	bool "Enable PEG Gen3 capability"
 	default n
-	depends on !USE_NATIVE_RAMINIT
 	help
 	  PCIe Gen3 needs a special training sequence that increases boot time.
-	  Native raminit doesn't support PCI Gen3 PEG ports.
+	  Native raminit training for PCI Gen3 PEG ports might be incomplete.
+	  Handle with care!
 
 if USE_NATIVE_RAMINIT
 

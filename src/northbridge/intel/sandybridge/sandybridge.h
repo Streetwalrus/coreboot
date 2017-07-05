@@ -113,8 +113,11 @@ enum platform_type {
 
 #define BCTRL1		0x3e	/* 16bit */
 #define LCAP		0xac	/* 32bit */
+#define LCTL		0xb0	/* 16bit */
+#define LSTS		0xb2	/* 16bit */
 #define LCAP2		0xcc	/* 32bit */
 #define LCTL2		0xd0	/* 16bit */
+
 #define HWSTRAP		0x504	/* 32bit */
 
 /* Device 0:2.0 PCI configuration space (Graphics Device) */

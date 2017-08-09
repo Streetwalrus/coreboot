@@ -158,11 +158,13 @@ static void sandybridge_setup_graphics(void)
 /*
  * Configure the PEG port.
  * Split the PEG port depending on HWSTRAP.
+ * Limit the maximum link speed depending on Gen3 fuse.
  */
 static void peg1x_port_config(void)
 {
 	u32 deven;
 	u8 peg_lanes[3] = {16, 0, 0};
+	u8 link_speed = 3;
 
 	printk(BIOS_DEBUG, "PEG: lane configuration ");
 	switch ((pci_read_config32(PCI_DEV(0, 1, 0), HWSTRAP) >> 16) & 0x3) {
@@ -184,6 +186,20 @@ static void peg1x_port_config(void)
 	}
 
 	/*
+	 * Disable PCIe Gen3 on:
+	 * * SandyBridge
+	 * * CAPID0_B "PEG10 Gen3 feature disable fuse"
+	 */
+	if (((pci_read_config16(PCI_DEV(0, 0, 0), PCI_DEVICE_ID) &
+	    BASE_REV_MASK) != BASE_REV_IVB) ||
+	    (pci_read_config32(PCI_DEV(0, 0, 0), CAPID0_B) & (1 << 20))) {
+		printk(BIOS_DEBUG, "PEG: PCIe Gen3 disabled\n");
+		link_speed = 2;
+	} else {
+		printk(BIOS_DEBUG, "PEG: PCIe Gen3 supported\n");
+	}
+
+	/*
 	 * The HWSTRAP configures DEVEN and sets the link width on each
 	 * PEG port.
 	 * Note that the LCAP bit's are read/write-once while documentation
@@ -194,22 +210,25 @@ static void peg1x_port_config(void)
 	if (peg_lanes[0] > 0) {
 		deven |= DEVEN_PEG10;
 		u32 tmp = pci_read_config32(PCI_DEV(0, 1, 0), LCAP);
-		tmp &= ~(0x1f << 4);
+		tmp &= ~((0x1f << 4) | (0xf << 0));
 		tmp |= peg_lanes[0] << 4;
+		tmp |= link_speed;
 		pci_write_config32(PCI_DEV(0, 1, 0), LCAP, tmp);
 	}
 	if (peg_lanes[1] > 0) {
 		deven |= DEVEN_PEG11;
 		u32 tmp = pci_read_config32(PCI_DEV(0, 1, 1), LCAP);
-		tmp &= ~(0x1f << 4);
+		tmp &= ~((0x1f << 4) | (0xf << 0));
 		tmp |= peg_lanes[1] << 4;
+		tmp |= link_speed;
 		pci_write_config32(PCI_DEV(0, 1, 1), LCAP, tmp);
 	}
 	if (peg_lanes[2] > 0) {
 		deven |= DEVEN_PEG12;
 		u32 tmp = pci_read_config32(PCI_DEV(0, 1, 2), LCAP);
-		tmp &= ~(0x1f << 4);
+		tmp &= ~((0x1f << 4) | (0xf << 0));
 		tmp |= peg_lanes[2] << 4;
+		tmp |= link_speed;
 		pci_write_config32(PCI_DEV(0, 1, 2), LCAP, tmp);
 	}
 	pci_write_config16(PCI_DEV(0, 0, 0), DEVEN, deven);
@@ -292,16 +311,31 @@ static void start_peg_link_training(void)
 	deven = pci_read_config32(PCI_DEV(0, 0, 0), DEVEN);
 
 	if (deven & DEVEN_PEG10) {
+		/* Run device detection at 2.5GT/s */
+		tmp = pci_read_config32(PCI_DEV(0, 1, 0), LCTL2) & ~0xf;
+		pci_write_config32(PCI_DEV(0, 1, 0), LCTL2, tmp | 1);
+
+		/* Start link training */
 		tmp = pci_read_config32(PCI_DEV(0, 1, 0), 0xC24) & ~(1 << 16);
 		pci_write_config32(PCI_DEV(0, 1, 0), 0xC24, tmp | (1 << 5));
 	}
 
 	if (deven & DEVEN_PEG11) {
+		/* Run device detection at 2.5GT/s */
+		tmp = pci_read_config32(PCI_DEV(0, 1, 1), LCTL2) & ~0xf;
+		pci_write_config32(PCI_DEV(0, 1, 1), LCTL2, tmp | 1);
+
+		/* Start link training */
 		tmp = pci_read_config32(PCI_DEV(0, 1, 1), 0xC24) & ~(1 << 16);
 		pci_write_config32(PCI_DEV(0, 1, 1), 0xC24, tmp | (1 << 5));
 	}
 
 	if (deven & DEVEN_PEG12) {
+		/* Run device detection at 2.5GT/s */
+		tmp = pci_read_config32(PCI_DEV(0, 1, 2), LCTL2) & ~0xf;
+		pci_write_config32(PCI_DEV(0, 1, 2), LCTL2, tmp | 1);
+
+		/* Start link training */
 		tmp = pci_read_config32(PCI_DEV(0, 1, 2), 0xC24) & ~(1 << 16);
 		pci_write_config32(PCI_DEV(0, 1, 2), 0xC24, tmp | (1 << 5));
 	}

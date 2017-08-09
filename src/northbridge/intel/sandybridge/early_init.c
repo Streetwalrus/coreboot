@@ -189,6 +189,7 @@ static void peg1x_port_config(void)
 	 * Disable PCIe Gen3 on:
 	 * * SandyBridge
 	 * * CAPID0_B "PEG10 Gen3 feature disable fuse"
+	 * * deselected CONFIG_ENABLE_PEG_GEN3
 	 */
 	if (((pci_read_config16(PCI_DEV(0, 0, 0), PCI_DEVICE_ID) &
 	    BASE_REV_MASK) != BASE_REV_IVB) ||
@@ -197,6 +198,10 @@ static void peg1x_port_config(void)
 		link_speed = 2;
 	} else {
 		printk(BIOS_DEBUG, "PEG: PCIe Gen3 supported\n");
+		if (!IS_ENABLED(CONFIG_ENABLE_PEG_GEN3)) {
+			link_speed = 2;
+			printk(BIOS_DEBUG, "PEG: Limiting to PCIe Gen2\n");
+		}
 	}
 
 	/*

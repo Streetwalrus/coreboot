@@ -100,6 +100,14 @@ config MMCONF_BASE_ADDRESS
 	help
 	  The MRC blob requires it to be at 0xf0000000.
 
+config ENABLE_PEG_GEN3
+	bool "Enable PEG Gen3 capability"
+	default n
+	depends on !USE_NATIVE_RAMINIT
+	help
+	  PCIe Gen3 needs a special training sequence that increases boot time.
+	  Native raminit doesn't support PCI Gen3 PEG ports.
+
 if USE_NATIVE_RAMINIT
 
 config DCACHE_RAM_BASE

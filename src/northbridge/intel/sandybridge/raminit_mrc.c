@@ -274,6 +274,9 @@ void perform_raminit(int s3resume)
 
 	mainboard_fill_pei_data(&pei_data);
 
+	/* Init PCIe Gen3 if requested */
+	pei_data.pcie_init = IS_ENABLED(CONFIG_ENABLE_PEG_GEN3);
+
 	post_code(0x3a);
 	pei_data.boot_mode = s3resume ? 2 : 0;
 	timestamp_add_now(TS_BEFORE_INITRAM);

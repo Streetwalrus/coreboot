@@ -151,6 +151,65 @@ static void sandybridge_setup_graphics(void)
 	MCHBAR32(0x5418) = reg32;
 }
 
+/* Static PHY configuration for IvyBridge */
+static void ivybridge_peg_phy(void)
+{
+	u32 tmp;
+
+	struct pcie_config {
+		u16 reg;
+		u32 and_mask;
+		u32 or_mask;
+	};
+
+	static const struct pcie_config lanes[] = {
+		{0x0a00, 0xf0d9ffc1, 0x0324001a},
+		{0x0a04, 0xfff9e7ff, 0x00021800},
+	};
+	static const struct pcie_config bundles[] = {
+		{0x0700, 0x04177ff7, 0x09e88008},
+		{0x0da0, 0x80F080F0, 0x27082708},
+		{0x0900, 0xf3ffffff, 0x00000000},
+		{0x0904, 0x8000f000, 0x2a1804a2},
+		{0x0908, 0x27ffffff, 0x50000000},
+		{0x090c, 0xc111f81f, 0x0ea00120},
+		{0x0910, 0xffffc03f, 0x00000340},
+		{0x0914, 0x77c21bff, 0x8815a400},
+	};
+	static const struct pcie_config single[] = {
+		{0x0308, 0xff80ff00, 0x0012006c},
+		{0x0314, 0xff80ffff, 0x00130000},
+		{0x0dd8, 0xffffbfff, 0x00004000},
+	};
+
+	for (size_t j = 0; j < ARRAY_SIZE(lanes); j++)
+		for (size_t i = 0; i < 16; i++) {
+			const u16 reg = lanes[j].reg + i * 0x10;
+
+			tmp = pci_read_config32(PCI_DEV(0, 1, 0), reg);
+			tmp &= lanes[j].and_mask;
+			tmp |= lanes[j].or_mask;
+			pci_write_config32(PCI_DEV(0, 1, 0), reg, tmp);
+		}
+
+	for (size_t j = 0; j < ARRAY_SIZE(bundles); j++)
+		for (size_t i = 0; i < 8; i++) {
+			const u16 reg = bundles[j].reg + i * 0x20;
+
+			tmp = pci_read_config32(PCI_DEV(0, 1, 0), reg);
+			tmp &= bundles[j].and_mask;
+			tmp |= bundles[j].or_mask;
+			pci_write_config32(PCI_DEV(0, 1, 0), reg, tmp);
+		}
+
+	for (size_t j = 0; j < ARRAY_SIZE(single); j++) {
+		tmp = pci_read_config32(PCI_DEV(0, 1, 0), single[j].reg);
+		tmp &= single[j].and_mask;
+		tmp |= single[j].or_mask;
+		pci_write_config32(PCI_DEV(0, 1, 0), single[j].reg, tmp);
+	}
+}
+
 static void start_peg_link_training(void)
 {
 	u32 tmp;
@@ -162,6 +221,9 @@ static void start_peg_link_training(void)
 			BASE_REV_MASK) != BASE_REV_IVB) ||
 		IS_ENABLED(CONFIG_HAVE_MRC))
 		return;
+
+	/* Configure PEG10/PEG11/PEG12 PHY */
+	ivybridge_peg_phy();
 
 	deven = pci_read_config32(PCI_DEV(0, 0, 0), DEVEN);
 

@@ -85,6 +85,10 @@ static void sandybridge_setup_graphics(void)
 	u8 reg8;
 	u8 gfxsize;
 
+	/* Just make sure IGD is on ... */
+	reg32 = pci_read_config32(PCI_DEV(0, 0, 0), DEVEN) | DEVEN_IGD;
+	pci_write_config32(PCI_DEV(0, 0, 0), DEVEN, reg32);
+
 	reg16 = pci_read_config16(PCI_DEV(0,2,0), PCI_DEVICE_ID);
 	switch (reg16) {
 	case 0x0102: /* GT1 Desktop */
@@ -149,6 +153,66 @@ static void sandybridge_setup_graphics(void)
 	reg32 = MCHBAR32(0x5418);
 	reg32 |= (1 << 4) | (1 << 5);
 	MCHBAR32(0x5418) = reg32;
+}
+
+/*
+ * Configure the PEG port.
+ * Split the PEG port depending on HWSTRAP.
+ */
+static void peg1x_port_config(void)
+{
+	u32 deven;
+	u8 peg_lanes[3] = {16, 0, 0};
+
+	printk(BIOS_DEBUG, "PEG: lane configuration ");
+	switch ((pci_read_config32(PCI_DEV(0, 1, 0), HWSTRAP) >> 16) & 0x3) {
+	case 0:
+		printk(BIOS_DEBUG, "x8 x4 x4\n");
+		peg_lanes[0] = 8;
+		peg_lanes[1] = 4;
+		peg_lanes[2] = 4;
+		break;
+	case 2:
+		printk(BIOS_DEBUG, "x8 x8\n");
+		peg_lanes[0] = 8;
+		peg_lanes[1] = 8;
+		peg_lanes[2] = 0;
+		break;
+	default:
+		printk(BIOS_DEBUG, "x16\n");
+		break;
+	}
+
+	/*
+	 * The HWSTRAP configures DEVEN and sets the link width on each
+	 * PEG port.
+	 * Note that the LCAP bit's are read/write-once while documentation
+	 * states that they are read-only!
+	 */
+	deven = pci_read_config16(PCI_DEV(0, 0, 0), DEVEN);
+	deven &= ~(DEVEN_PEG10 | DEVEN_PEG11 | DEVEN_PEG12);
+	if (peg_lanes[0] > 0) {
+		deven |= DEVEN_PEG10;
+		u32 tmp = pci_read_config32(PCI_DEV(0, 1, 0), LCAP);
+		tmp &= ~(0x1f << 4);
+		tmp |= peg_lanes[0] << 4;
+		pci_write_config32(PCI_DEV(0, 1, 0), LCAP, tmp);
+	}
+	if (peg_lanes[1] > 0) {
+		deven |= DEVEN_PEG11;
+		u32 tmp = pci_read_config32(PCI_DEV(0, 1, 1), LCAP);
+		tmp &= ~(0x1f << 4);
+		tmp |= peg_lanes[1] << 4;
+		pci_write_config32(PCI_DEV(0, 1, 1), LCAP, tmp);
+	}
+	if (peg_lanes[2] > 0) {
+		deven |= DEVEN_PEG12;
+		u32 tmp = pci_read_config32(PCI_DEV(0, 1, 2), LCAP);
+		tmp &= ~(0x1f << 4);
+		tmp |= peg_lanes[2] << 4;
+		pci_write_config32(PCI_DEV(0, 1, 2), LCAP, tmp);
+	}
+	pci_write_config16(PCI_DEV(0, 0, 0), DEVEN, deven);
 }
 
 /* Static PHY configuration for IvyBridge */
@@ -251,7 +315,6 @@ static void start_peg_link_training(void)
 void sandybridge_early_initialization(void)
 {
 	u32 capid0_a;
-	u32 deven;
 	u8 reg8;
 
 	/* Device ID Override Enable should be done very early */
@@ -274,11 +337,10 @@ void sandybridge_early_initialization(void)
 	/* Setup IOMMU BARs */
 	sandybridge_init_iommu();
 
-	/* Device Enable, don't touch PEG bits */
-	deven = pci_read_config32(PCI_DEV(0, 0, 0), DEVEN) | DEVEN_IGD;
-	pci_write_config32(PCI_DEV(0, 0, 0), DEVEN, deven);
-
 	sandybridge_setup_graphics();
+
+	/* Read PEG HWSTRAP and configure ports */
+	peg1x_port_config();
 
 	/* Write magic value to start PEG link training.
 	 * This should be done in PCI device enumeration, but

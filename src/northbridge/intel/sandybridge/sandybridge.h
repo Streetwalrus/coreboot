@@ -112,7 +112,10 @@ enum platform_type {
 /* Device 0:1.0 PCI configuration space (PCI Express) */
 
 #define BCTRL1		0x3e	/* 16bit */
-
+#define LCAP		0xac	/* 32bit */
+#define LCAP2		0xcc	/* 32bit */
+#define LCTL2		0xd0	/* 16bit */
+#define HWSTRAP		0x504	/* 32bit */
 
 /* Device 0:2.0 PCI configuration space (Graphics Device) */
 

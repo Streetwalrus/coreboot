@@ -1,0 +1,8 @@
+Category: desktop
+Vendor name: ASUS
+Board name: P8Z77-V Pro
+ROM package: DIP8
+ROM socketed: y
+ROM protocol: SPI
+Flashrom support: y
+Release year: 2012

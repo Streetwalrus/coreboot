@@ -863,6 +863,7 @@ static void lpc_final(struct device *dev)
 		if (IS_ENABLED(CONFIG_INTEL_CHIPSET_LOCKDOWN) ||
 		    acpi_is_wakeup_s3()) {
 			outb(APM_CNT_FINALIZE, APM_CNT);
+			spi_init();
 		}
 	}
 }

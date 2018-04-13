@@ -228,7 +228,7 @@ static void dram_find_spds_ddr3(spd_raw_data *spd, ramctr_timing *ctrl)
 			/* search for XMP profile */
 			spd_xmp_decode_ddr3(&dimm->dimm[channel][slot],
 					spd[spd_slot],
-					DDR3_XMP_PROFILE_1);
+					DDR3_XMP_PROFILE_2);
 
 			if (dimm->dimm[channel][slot].dram_type != SPD_MEMORY_TYPE_SDRAM_DDR3) {
 				printram("No valid XMP profile found.\n");

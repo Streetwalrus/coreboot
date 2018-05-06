@@ -495,6 +495,12 @@ static void model_206ax_init(struct device *cpu)
 
 	/* Enable Turbo */
 	enable_turbo();
+
+	msr_t turbo = {
+		.hi = 0,
+		.lo = 0x27272727,
+	};
+	wrmsr(MSR_TURBO_RATIO_LIMIT, turbo);
 }
 
 /* MP initialization support. */

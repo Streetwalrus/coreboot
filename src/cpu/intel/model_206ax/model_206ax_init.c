@@ -572,6 +572,11 @@ static void model_206ax_init(struct device *cpu)
 	/* Enable Turbo */
 	enable_turbo();
 
+	msr_t turbo = {
+		.hi = 0,
+		.lo = 0x29292929,
+	};
+	wrmsr(MSR_TURBO_RATIO_LIMIT, turbo);
 	/* Start up extra cores */
 	intel_cores_init(cpu);
 }

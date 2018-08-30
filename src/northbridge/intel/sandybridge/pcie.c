@@ -170,11 +170,15 @@ static void pcie_gen3_training(device_t dev)
 
 	start_bundle = 0;
 	if (PCI_FUNC(dev->path.pci.devfn) == 1)
-		start_bundle = 8;
+		start_bundle = 4;
 	if (PCI_FUNC(dev->path.pci.devfn) == 2)
-		start_bundle = 12;
+		start_bundle = 6;
+	end_bundle += start_bundle;
 
-	for (bundle = 0; bundle < end_bundle; bundle ++) {
+	printk(BIOS_DEBUG, "%s: Training bundles %zu to %zu\n",
+	       dev_path(dev), start_bundle, end_bundle - 1);
+
+	for (bundle = start_bundle; bundle < end_bundle; bundle ++) {
 		size_t result1[ARRAY_SIZE(reg_da0)] = {0};
 		size_t best_da0 = 0;
 
@@ -197,32 +201,41 @@ static void pcie_gen3_training(device_t dev)
 
 			for (size_t j = 0; j < 4; j++) {
 				/* Run training sequence 1 */
-				result1[i] += pcie_training1(dev, bundle);
+				size_t res = pcie_training1(dev, bundle);
+				result1[i] += res;
 
 				/* Retrain link in case it was lost */
-				/* Set PCIe Gen1 */
-				pcie_change_link_speed(dev, 1);
-				/* Set PCIe Gen3 */
-				pcie_change_link_speed(dev, 3);
+				if (res == 0) {
+					/* Set PCIe Gen1 */
+					pcie_change_link_speed(dev, 1);
+					/* Set PCIe Gen3 */
+					pcie_change_link_speed(dev, 3);
+				}
 			}
 			printk(BIOS_SPEW, "%s: training1 = %zu\n",
 			       dev_path(dev), result1[i]);
 
 			// FIXME: implement training2
 		}
+		size_t max = 0;
 		for (size_t i = 0; i < ARRAY_SIZE(reg_da0); i++) {
-			size_t max = 0;
 			if (result1[i] > max) {
 				max = result1[i];
 				best_da0 = i;
 			}
 		}
 
+		/* Set PCIe Gen1 */
+		pcie_change_link_speed(dev, 1);
+
+		if (max == 0) {
+			printk(BIOS_DEBUG, "%s: Training failed\n", dev_path(dev));
+			return;
+		}
+
 		printk(BIOS_DEBUG, "%s: Using best 0xda0 = %u on bundle %zu\n",
 		       dev_path(dev), reg_da0[best_da0], bundle);
 
-		/* Set PCIe Gen1 */
-		pcie_change_link_speed(dev, 1);
 		/* Programm 0xda0 */
 		pcie_programm_da0(dev, reg_da0[best_da0]);
 		/* Set PCIe Gen3 */

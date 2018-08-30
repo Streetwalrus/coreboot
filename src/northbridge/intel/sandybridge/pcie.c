@@ -49,7 +49,7 @@ static void pcie_change_link_speed(device_t dev, size_t speed)
 	pcie_linktraining(dev);
 }
 
-static void pcie_programm_da0(device_t dev, u8 val)
+static void pcie_program_da0(device_t dev, u8 val)
 {
 	u32 tmp;
 
@@ -94,7 +94,7 @@ static bool pcie_get_port_error(device_t dev, u8 bundle)
 	return false;
 }
 
-static void pcie_programm_90x(device_t dev, u8 bundle, u8 a, u8 b)
+static void pcie_program_90x(device_t dev, u8 bundle, u8 a, u8 b)
 {
 	u32 tmp;
 
@@ -125,8 +125,8 @@ static size_t pcie_training1(device_t dev, u8 bundle)
 		/* Clear error register */
 		pcie_get_port_error(dev, bundle);
 
-		/* Programm test values */
-		pcie_programm_90x(dev, bundle, a[i], i);
+		/* Program test values */
+		pcie_program_90x(dev, bundle, a[i], i);
 
 		/* Wait a little */
 		mdelay(50);
@@ -135,7 +135,7 @@ static size_t pcie_training1(device_t dev, u8 bundle)
 		while (timeout-- && !pcie_get_port_error(dev, bundle))
 			mdelay(1);
 
-		/* No errors occured after 100msec ? */
+		/* No errors occurred after 100msec ? */
 		if (timeout == 0) {
 			/* done */
 			break;
@@ -178,7 +178,7 @@ static void pcie_gen3_training(device_t dev)
 	printk(BIOS_DEBUG, "%s: Training bundles %zu to %zu\n",
 	       dev_path(dev), start_bundle, end_bundle - 1);
 
-	for (bundle = start_bundle; bundle < end_bundle; bundle ++) {
+	for (bundle = start_bundle; bundle < end_bundle; bundle++) {
 		size_t result1[ARRAY_SIZE(reg_da0)] = {0};
 		size_t best_da0 = 0;
 
@@ -191,8 +191,8 @@ static void pcie_gen3_training(device_t dev)
 
 			/* Set PCIe Gen1 */
 			pcie_change_link_speed(dev, 1);
-			/* Programm 0xda0 */
-			pcie_programm_da0(dev, reg_da0[i]);
+			/* Program 0xda0 */
+			pcie_program_da0(dev, reg_da0[i]);
 			/* Set PCIe Gen3 */
 			pcie_change_link_speed(dev, 3);
 			/* Running at PCIe Gen3 ? */
@@ -236,8 +236,8 @@ static void pcie_gen3_training(device_t dev)
 		printk(BIOS_DEBUG, "%s: Using best 0xda0 = %u on bundle %zu\n",
 		       dev_path(dev), reg_da0[best_da0], bundle);
 
-		/* Programm 0xda0 */
-		pcie_programm_da0(dev, reg_da0[best_da0]);
+		/* Program 0xda0 */
+		pcie_program_da0(dev, reg_da0[best_da0]);
 		/* Set PCIe Gen3 */
 		pcie_change_link_speed(dev, 3);
 	}

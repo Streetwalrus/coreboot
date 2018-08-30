@@ -101,6 +101,7 @@ static void pcie_program_90x(device_t dev, u8 bundle, u8 a, u8 b)
 	tmp = pci_read_config32(dev, 0x900 + bundle * 0x20) & ~(0xff << 10);
 	pci_write_config32(dev, 0x900 + bundle * 0x20, tmp | (a << 10));
 
+	// FIXME the masking and shifting look really odd here compared to above
 	tmp = pci_read_config32(dev, 0x90c + bundle * 0x20) & ~(0x3f << 11);
 	pci_write_config32(dev, 0x90c + bundle * 0x20, tmp | (b << 11));
 }
@@ -117,6 +118,7 @@ static size_t pcie_training1(device_t dev, u8 bundle)
 	tmp = pci_read_config32(dev, 0xa00 + bundle * 0x10);
 	pci_write_config32(dev, 0xa00 + bundle * 0x10, tmp | (1 << 20));
 
+	// FIXME bundle + 1 is most likely wrong
 	tmp = pci_read_config32(dev, 0xa00 + (bundle + 1) * 0x10);
 	pci_write_config32(dev, 0xa00 + (bundle + 1) * 0x10, tmp | (1 << 20));
 
@@ -153,6 +155,7 @@ static size_t pcie_training1(device_t dev, u8 bundle)
 	tmp = pci_read_config32(dev, 0xa00 + bundle * 0x10) & ~(1 << 20);
 	pci_write_config32(dev, 0xa00 + bundle * 0x10, tmp);
 
+	// FIXME bundle + 1 is most likely wrong
 	tmp = pci_read_config32(dev, 0xa00 + (bundle + 1) * 0x10) & ~(1 << 20);
 	pci_write_config32(dev, 0xa00 + (bundle + 1) * 0x10, tmp);
 
@@ -169,6 +172,7 @@ static void pcie_gen3_training(device_t dev)
 	end_bundle = ((pci_read_config16(dev, LSTS) >> 4) & 0x3f) >> 1;
 
 	start_bundle = 0;
+	// FIXME which start_bundle values should we use here?
 	if (PCI_FUNC(dev->path.pci.devfn) == 1)
 		start_bundle = 4;
 	if (PCI_FUNC(dev->path.pci.devfn) == 2)
@@ -227,6 +231,7 @@ static void pcie_gen3_training(device_t dev)
 			return;
 		}
 
+		// FIXME since this value is global to the device, consider picking the worst bundle
 		printk(BIOS_DEBUG, "%s: Using best 0xda0 = %u on bundle %zu\n",
 		       dev_path(dev), reg_da0[best_da0], bundle);
 

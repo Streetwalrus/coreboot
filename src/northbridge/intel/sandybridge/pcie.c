@@ -189,26 +189,21 @@ static void pcie_gen3_training(device_t dev)
 			printk(BIOS_SPEW, "%s: 0xda0 = %u\n",
 			       dev_path(dev), reg_da0[i]);
 
-			/* Set PCIe Gen1 */
 			pcie_change_link_speed(dev, 1);
-			/* Program 0xda0 */
 			pcie_program_da0(dev, reg_da0[i]);
-			/* Set PCIe Gen3 */
 			pcie_change_link_speed(dev, 3);
+
 			/* Running at PCIe Gen3 ? */
 			if ((pci_read_config16(dev, LSTS) & 0xf) != 3)
 				continue;
 
 			for (size_t j = 0; j < 4; j++) {
-				/* Run training sequence 1 */
 				size_t res = pcie_training1(dev, bundle);
 				result1[i] += res;
 
 				/* Retrain link in case it was lost */
 				if (res == 0) {
-					/* Set PCIe Gen1 */
 					pcie_change_link_speed(dev, 1);
-					/* Set PCIe Gen3 */
 					pcie_change_link_speed(dev, 3);
 				}
 			}
@@ -225,7 +220,6 @@ static void pcie_gen3_training(device_t dev)
 			}
 		}
 
-		/* Set PCIe Gen1 */
 		pcie_change_link_speed(dev, 1);
 
 		if (max == 0) {
@@ -236,9 +230,7 @@ static void pcie_gen3_training(device_t dev)
 		printk(BIOS_DEBUG, "%s: Using best 0xda0 = %u on bundle %zu\n",
 		       dev_path(dev), reg_da0[best_da0], bundle);
 
-		/* Program 0xda0 */
 		pcie_program_da0(dev, reg_da0[best_da0]);
-		/* Set PCIe Gen3 */
 		pcie_change_link_speed(dev, 3);
 	}
 }

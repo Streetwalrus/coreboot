@@ -23,6 +23,7 @@
 #include <program_loading.h>
 #include <romstage_handoff.h>
 #include <symbols.h>
+#include <delay.h>
 
 #if ENV_RAMSTAGE || ENV_POSTCAR
 
@@ -35,6 +36,7 @@ static void acpi_handoff_wakeup(void)
 		if (romstage_handoff_is_resume()) {
 			printk(BIOS_DEBUG, "S3 Resume.\n");
 			acpi_slp_type = ACPI_S3;
+			mdelay(300);
 		} else {
 			printk(BIOS_DEBUG, "Normal boot.\n");
 			acpi_slp_type = ACPI_S0;
